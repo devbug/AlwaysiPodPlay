@@ -1,0 +1,10 @@
+{
+	entry = {
+		bundle = "AlwaysiPodPlaySettings";
+		cell = PSLinkCell;
+		detail = "AlwaysiPodPlaySettingsListController";
+		icon = "AlwaysiPodPlaySettings.png";
+		isController = 1;
+		label = "Always iPod Play";
+	};
+}
