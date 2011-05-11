@@ -47,7 +47,6 @@
 #import <UIKit/UIKit.h>
 
 #include <dlfcn.h>
-#include <objc/runtime.h>
 
 
 typedef NSInteger SNBlackListType;

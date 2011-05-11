@@ -28,6 +28,8 @@
 #import "../MBProgressHUD/MBProgressHUD.h"
 #import "AippAppListCell.h"
 
+#include <objc/runtime.h>
+
 
 
 extern NSInteger compareDisplayNames(NSString *a, NSString *b, void *context);
