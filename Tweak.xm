@@ -75,6 +75,8 @@ OSStatus new_AudioSessionSetProperty(AudioSessionPropertyID inID, UInt32 ioDataS
 	if (inID == kAudioSessionProperty_AudioCategory)
 		if (AlwaysiPodPlayNoManner) {
 			*((int*)outData) = kAudioSessionCategory_MediaPlayback;
+			UInt32 doSetProperty = 1;
+			origin_AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(doSetProperty), &doSetProperty);
 		} else {
 			UInt32 otherAudioIsPlaying;
 			UInt32 propertySize = sizeof(otherAudioIsPlaying);
@@ -95,8 +97,12 @@ OSStatus new_AudioSessionSetProperty(AudioSessionPropertyID inID, UInt32 ioDataS
 %hook AVAudioSession
 
 - (BOOL)setCategory:(NSString*)theCategory error:(NSError**)outError {
-	if (AlwaysiPodPlayNoManner)
+	if (AlwaysiPodPlayNoManner) {
+		UInt32 doSetProperty = 1;
+		AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(doSetProperty), &doSetProperty);
+		
 		return %orig(AVAudioSessionCategoryPlayback, outError);
+	}
 	
 	UInt32 otherAudioIsPlaying;
 	UInt32 propertySize = sizeof(otherAudioIsPlaying);
@@ -130,15 +136,15 @@ OSStatus new_AudioSessionSetProperty(AudioSessionPropertyID inID, UInt32 ioDataS
 		[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil];
 		UInt32 doSetProperty = 1;
 		AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(doSetProperty), &doSetProperty);
-		[[AVAudioSession sharedInstance] setActive:NO error:nil];
 	} else {
 		if (otherAudioIsPlaying) {
 			if (sessionCategory == kAudioSessionCategory_SoloAmbientSound) {
 				[[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryAmbient error:nil];
-				[[AVAudioSession sharedInstance] setActive:NO error:nil];
 			}
 		}
 	}
+	
+	[[AVAudioSession sharedInstance] setActive:NO error:nil];
 }
 
 -(void)_setActivated:(BOOL)activated {

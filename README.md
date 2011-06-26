@@ -31,16 +31,16 @@ Usage
 <br />제작자가 '설명의 귀찮음'을 이유로 간단하게 리스프링이 필요하다고 적어두었습
 <br />니다만(;ㅁ;..) 사실 해당 앱을 재실행 하는 것으로 간단하게 바로 적용됩니다.
 <br />
+<br />
 License
 -------
 This is free software licensed under the GNU General Public License..
 <br />
 <br />
-<br />
 Downloads / Installation
 -------------------------
 우 상단의 'Downloads' 버튼을 통해 패키징 된 deb 파일을 받으실 수 있습니다.
-<br />이 파일을 받아서 설치하시면 됩니다.
+<br />그 파일을 받아서 설치하시면 됩니다.
 <br />
 <br />
 <br />

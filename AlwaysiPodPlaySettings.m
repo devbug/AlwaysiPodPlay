@@ -31,6 +31,8 @@
 #include <objc/runtime.h>
 
 
+#define HUD_TAG		998
+
 
 extern NSInteger compareDisplayNames(NSString *a, NSString *b, void *context);
 extern NSArray *applicationDisplayIdentifiers();
@@ -58,7 +60,6 @@ static PSListController *_SettingsController;
 
 -(void)donate:(id)param 
 {
-	/*Add code to be executed here.  Anything goes, so don¡¯t feel limited by simply being in Settings */
 	NSURL *url = [NSURL URLWithString:@"https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=MQVNYVMDU78CG&lc=KR&item_name=SwipeNav&item_number=SwipeNav&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted"];
 	[[UIApplication sharedApplication] openURL:url];
 }
@@ -99,6 +100,8 @@ static PSListController *_SettingsController;
 
 - (id) initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size]) != nil) {
+		_list = nil;
+		
 		_tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 320, 480-64) style:UITableViewStylePlain];
 		[_tableView setDelegate:self];
 		[_tableView setDataSource:self];
@@ -128,28 +131,27 @@ static PSListController *_SettingsController;
 - (void)loadWhiteListView
 {
 	MBProgressHUD *HUD = nil;
-	if ((HUD = (MBProgressHUD *)[window viewWithTag:998]) == nil) {
+	if ((HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG]) == nil) {
 		HUD = [[MBProgressHUD alloc] initWithView:window];
 		[window addSubview:HUD];
 	}
-					//[[_SettingsController bundle] localizedStringForKey:@"NOW_PRINTING" value:@"Loading..." table:@"AlwaysiPodPlaySettings"];
 	HUD.labelText = [[_SettingsController bundle] localizedStringForKey:@"LOAD_DATA" value:@"Loading Data" table:@"AlwaysiPodPlaySettings"];
 	HUD.detailsLabelText = [[_SettingsController bundle] localizedStringForKey:@"PLZ_WAIT" value:@"Please wait..." table:@"AlwaysiPodPlaySettings"];
 	HUD.labelFont = [UIFont fontWithName:@"Helvetica" size:24];
 	HUD.detailsLabelFont = [UIFont fontWithName:@"Helvetica" size:18];
-	HUD.tag = 998;
+	HUD.tag = HUD_TAG;
 	[HUD show:YES];
 	[HUD release];
 	
-	NSThread *spinThread = [[NSThread alloc] initWithTarget:self selector:@selector(loadInstalledAppData) object:nil];
-	[spinThread start];
-	[spinThread release];
+	NSThread *loadThread = [[NSThread alloc] initWithTarget:self selector:@selector(loadInstalledAppData) object:nil];
+	[loadThread start];
+	[loadThread release];
 }
 
 
 - (void) loadInstalledAppData {
-	if (!_list)
-		_list = [[NSMutableArray alloc] init];
+	[_list release];
+	_list = nil;
 	
 	NSSet *set = [NSSet setWithArray:applicationDisplayIdentifiers()];
 	NSArray *sortedArray = [[set allObjects] sortedArrayUsingFunction:compareDisplayNames context:NULL];
@@ -158,7 +160,7 @@ static PSListController *_SettingsController;
 	
 	[_tableView reloadData];
 	
-	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:998];
+	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG];
 	[HUD hide:YES];
 }
 
@@ -179,18 +181,18 @@ static PSListController *_SettingsController;
 }
 
 - (int) numberOfSectionsInTableView:(UITableView *)tableView {
-    return 1;
+	return 1;
 }
 
 - (id) tableView:(UITableView *)tableView titleForHeaderInSection:(int)section {
-    return nil;
+	return nil;
 }
 
 - (int) tableView:(UITableView *)tableView numberOfRowsInSection:(int)section {
 	if(!_list)
 		return 0;
 	
-    return [_list count];
+	return [_list count];
 }
 
 - (id) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -228,7 +230,7 @@ static PSListController *_SettingsController;
 	if ([cell.displayId hasPrefix:@"com.apple.mobileipod"])
 		cell.blackListType = SNBlackListForce;
 	
-    return cell;
+	return cell;
 }
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -258,12 +260,9 @@ static PSListController *_SettingsController;
 		data = [NSMutableDictionary dictionary];
 	}
 	
-	BOOL isNew = NO;
-	NSMutableArray *whitelist = [data objectForKey:@"WhiteList"];
-	if (whitelist == nil) {
+	NSMutableArray *whitelist = [[data objectForKey:@"WhiteList"] retain];
+	if (whitelist == nil)
 		whitelist = [[NSMutableArray alloc] init];
-		isNew = YES;
-	}
 	
 	if (cell.blackListType == SNBlackListNormal) {
 		[whitelist addObject:identifier];
@@ -272,7 +271,7 @@ static PSListController *_SettingsController;
 	}
 	
 	[data setObject:whitelist forKey:@"WhiteList"];
-	if (isNew) [whitelist release];
+	[whitelist release];
 	
 	
 	[data writeToFile:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist" atomically:YES];
@@ -281,7 +280,7 @@ static PSListController *_SettingsController;
 }
 
 - (void) dealloc {
-	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:998];
+	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG];
 	[HUD removeFromSuperview];
 	
 	[_tableView release];
