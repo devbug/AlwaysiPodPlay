@@ -26,7 +26,7 @@
 #import <Preferences/Preferences.h>
 
 #import "../MBProgressHUD/MBProgressHUD.h"
-#import "AippAppListCell.h"
+#import "FilteredAppListCell.h"
 
 #include <objc/runtime.h>
 
@@ -36,6 +36,7 @@
 
 extern NSInteger compareDisplayNames(NSString *a, NSString *b, void *context);
 extern NSArray *applicationDisplayIdentifiers();
+extern NSString * SBSCopyLocalizedApplicationNameForDisplayIdentifier(NSString *identifier);
 
 
 
@@ -43,11 +44,11 @@ static PSListController *_SettingsController;
 
 
 
-@interface AlwaysiPodPlaySettingsListController: PSListController {
-}
+@interface AlwaysiPodPlaySettingsListController: PSListController
 @end
 
 @implementation AlwaysiPodPlaySettingsListController
+
 - (id)specifiers {
 	if(_specifiers == nil) {
 		_specifiers = [[self loadSpecifiersFromPlistName:@"AlwaysiPodPlaySettings" target:self] retain];
@@ -58,8 +59,7 @@ static PSListController *_SettingsController;
 	return _specifiers;
 }
 
--(void)donate:(id)param 
-{
+- (void)donate:(id)param {
 	NSURL *url = [NSURL URLWithString:@"https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=MQVNYVMDU78CG&lc=KR&item_name=SwipeNav&item_number=SwipeNav&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted"];
 	[[UIApplication sharedApplication] openURL:url];
 }
@@ -76,20 +76,23 @@ static PSListController *_SettingsController;
 	UIView *__view;
 }
 
-- (id) initForContentSize:(CGSize)size;
-- (id) view;
+- (id)initForContentSize:(CGSize)size;
+- (id)view;
 - (id)_tableView;
-- (id) navigationTitle;
-- (void) dealloc;
+- (id)navigationTitle;
+- (void)dealloc;
 
 - (void)loadWhiteListView;
 - (void)loadInstalledAppData;
+- (id)makeCell:(NSString *)identifier;
 
-- (int) numberOfSectionsInTableView:(UITableView *)tableView;
-- (id) tableView:(UITableView *)tableView titleForHeaderInSection:(int)section;
-- (int) tableView:(UITableView *)tableView numberOfRowsInSection:(int)section;
-- (id) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
-- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath;
+- (int)numberOfSectionsInTableView:(UITableView *)tableView;
+- (id)tableView:(UITableView *)tableView titleForHeaderInSection:(int)section;
+- (int)tableView:(UITableView *)tableView numberOfRowsInSection:(int)section;
+- (id)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath;
+- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView;
+- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index;
 
 @end
 
@@ -98,7 +101,7 @@ static PSListController *_SettingsController;
 @implementation AlwaysiPodPlayWhiteListController
 
 
-- (id) initForContentSize:(CGSize)size {
+- (id)initForContentSize:(CGSize)size {
 	if ((self = [super initForContentSize:size]) != nil) {
 		_list = nil;
 		
@@ -143,116 +146,157 @@ static PSListController *_SettingsController;
 	[HUD show:YES];
 	[HUD release];
 	
-	NSThread *loadThread = [[NSThread alloc] initWithTarget:self selector:@selector(loadInstalledAppData) object:nil];
-	[loadThread start];
-	[loadThread release];
+	[self performSelector:@selector(loadInstalledAppData) withObject:nil afterDelay:0.1f];
 }
 
 
-- (void) loadInstalledAppData {
+- (void)loadInstalledAppData {
+	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+	
+	[_tableView setDataSource:nil];
 	[_list release];
-	_list = nil;
+	_list = [[NSMutableArray alloc] init];
 	
 	NSSet *set = [NSSet setWithArray:applicationDisplayIdentifiers()];
 	NSArray *sortedArray = [[set allObjects] sortedArrayUsingFunction:compareDisplayNames context:NULL];
 	
-	_list = [sortedArray retain];
+	// http://pastebin.com/7YkT4dbk
+	// 한글 로마자 변환 프로그램 by 동성
+	NSString *choCharset = @"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
 	
+	unichar header = ' ', temp;
+	for (NSString *displayId in sortedArray) {
+		NSString *name = SBSCopyLocalizedApplicationNameForDisplayIdentifier(displayId);
+		
+		if (name) {
+			temp = [[name uppercaseString] characterAtIndex:0];
+			[name release];
+			
+			if(0xAC00 <= temp && temp <= 0xD7AF) {
+				unsigned int choSung = (temp - 0xAC00) / (21*28);
+				temp = [[choCharset substringWithRange:NSMakeRange(choSung, 1)] characterAtIndex:0];
+			}
+			
+			if (header != temp) {
+				header = temp;
+				[_list addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:[NSString stringWithCharacters:&header length:1], @"section", nil]];
+			}
+		}
+		
+		if ([_list count] > 0) {
+			NSMutableArray *arr = [[_list objectAtIndex:[_list count]-1] objectForKey:@"data"];
+			if (arr == nil)
+				arr = [NSMutableArray array];
+			[arr addObject:[self makeCell:displayId]];
+			
+			[[_list objectAtIndex:[_list count]-1] setObject:arr forKey:@"data"];
+		}
+	}
+	
+	[_tableView setDataSource:self];
 	[_tableView reloadData];
 	
 	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG];
 	[HUD hide:YES];
-}
-
-
-- (id) view {
-	if (__view)
-		return __view;
 	
-	return _tableView;
+	[pool release];
 }
 
-- (id) _tableView {
-	return _tableView;
-}
-
-- (id) navigationTitle {
-	return _title;
-}
-
-- (int) numberOfSectionsInTableView:(UITableView *)tableView {
-	return 1;
-}
-
-- (id) tableView:(UITableView *)tableView titleForHeaderInSection:(int)section {
-	return nil;
-}
-
-- (int) tableView:(UITableView *)tableView numberOfRowsInSection:(int)section {
-	if(!_list)
-		return 0;
+- (id)makeCell:(NSString *)identifier {
+	FilteredAppListCell *cell = [[[FilteredAppListCell alloc] initWithFrame:CGRectMake(0, 0, 100, 100) reuseIdentifier:@"WhiteListCell"] autorelease];
 	
-	return [_list count];
-}
-
-- (id) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-	AippAppListCell *cell = (AippAppListCell *)[tableView dequeueReusableCellWithIdentifier:@"WhiteListCell"];
-	if (!cell) 
-		cell = [[[AippAppListCell alloc] initWithFrame:CGRectMake(0, 0, 100, 100) reuseIdentifier:@"WhiteListCell"] autorelease];
-	
-	cell.displayId = [_list objectAtIndex:indexPath.row];
+	cell.enableForceType = NO;
+	cell.displayId = identifier;
 	
 	BOOL isWhiteList = NO;
 	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist"]) {
 		NSDictionary *data = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist"];
 		
 		if (data) {
-			NSString *identifier = [_list objectAtIndex:indexPath.row];
 			NSArray *whitelist = [data objectForKey:@"WhiteList"];
 			
-			if (whitelist != nil) {
-				for (NSString *str in whitelist) {
-					if ([identifier isEqualToString:str]) {
-						isWhiteList = YES;
-						break;
-					}
-				}
-			}
+			if (whitelist != nil)
+				isWhiteList = [whitelist containsObject:identifier];
 		}
 	}
 	
 	if (isWhiteList) {
-		cell.blackListType = SNBlackListNormal;
+		cell.filteredListType = FilteredListNormal;
 	} else {
-		cell.blackListType = SNBlackListNone;
+		cell.filteredListType = FilteredListNone;
 	}
 	
 	if ([cell.displayId hasPrefix:@"com.apple.mobileipod"])
-		cell.blackListType = SNBlackListForce;
+		cell.filteredListType = FilteredListForce;
 	
 	return cell;
 }
 
-- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-	AippAppListCell *cell = (AippAppListCell *)[tableView cellForRowAtIndexPath:indexPath];
+
+- (id)view {
+	if (__view)
+		return __view;
 	
-	switch (cell.blackListType) {
-		case SNBlackListNone:
-			cell.blackListType = SNBlackListNormal;
-			break;
-		case SNBlackListForce:
-			break;;
-		case SNBlackListNormal:
-		default:
-			cell.blackListType = SNBlackListNone;
-			break;
+	return _tableView;
+}
+
+- (id)_tableView {
+	return _tableView;
+}
+
+- (id)navigationTitle {
+	return _title;
+}
+
+- (int)numberOfSectionsInTableView:(UITableView *)tableView {
+	if (!_list) return 1;
+	return ([_list count] == 0 ? 1: [_list count]);
+}
+
+- (id)tableView:(UITableView *)tableView titleForHeaderInSection:(int)section {
+	if (!_list || [_list count] == 0)
+		return nil;
+	
+	return [[_list objectAtIndex:section] objectForKey:@"section"];
+}
+
+- (int)tableView:(UITableView *)tableView numberOfRowsInSection:(int)section {
+	if (!_list || [_list count] == 0)
+		return 0;
+	
+	return [[[_list objectAtIndex:section] objectForKey:@"data"] count];
+}
+
+- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView {
+	NSMutableArray *arr = [NSMutableArray array];
+	for (int i = 0; i < [_list count]; i++) {
+		[arr addObject:[[_list objectAtIndex:i] objectForKey:@"section"]];
 	}
+	return arr;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index {
+	return index;
+}
+
+- (id)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+	FilteredAppListCell *cell = (FilteredAppListCell *)[[[_list objectAtIndex:indexPath.section] objectForKey:@"data"] objectAtIndex:indexPath.row];
+	
+	[cell loadIcon];
+	
+	return cell;
+}
+
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+	FilteredAppListCell *cell = (FilteredAppListCell *)[tableView cellForRowAtIndexPath:indexPath];
+	
+	[cell toggle];
 	
 	[tableView deselectRowAtIndexPath:(NSIndexPath *)indexPath animated:YES];
 	
-	if (cell.blackListType == SNBlackListForce) return;
+	if (cell.filteredListType == FilteredListForce) return;
 	
-	NSString *identifier = [_list objectAtIndex:indexPath.row];
+	NSString *identifier = cell.displayId;
 	NSMutableDictionary *data;
 	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist"]) {
 		data = [NSMutableDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist"];
@@ -264,7 +308,7 @@ static PSListController *_SettingsController;
 	if (whitelist == nil)
 		whitelist = [[NSMutableArray alloc] init];
 	
-	if (cell.blackListType == SNBlackListNormal) {
+	if (cell.filteredListType == FilteredListNormal) {
 		[whitelist addObject:identifier];
 	} else {
 		[whitelist removeObject:identifier];
@@ -279,7 +323,7 @@ static PSListController *_SettingsController;
 	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.devbug.alwaysipodplay.prefnoti"), NULL, NULL, true);
 }
 
-- (void) dealloc {
+- (void)dealloc {
 	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG];
 	[HUD removeFromSuperview];
 	
@@ -330,15 +374,15 @@ static PSListController *_SettingsController;
 	return self;
 }
 
-- (id) view {
+- (id)view {
 	return _textView;
 }
 
-- (id) navigationTitle {
+- (id)navigationTitle {
 	return _title;
 }
 
-- (void) dealloc {
+- (void)dealloc {
 	[_textView release];
 	[_title release];
 	

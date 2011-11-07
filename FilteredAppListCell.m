@@ -39,12 +39,12 @@
  */
 
 /**
- * AippAppListCell.m
+ * FilteredAppListCell.m
  * 
  * edited by deVbug
  */
 
-#import "AippAppListCell.h"
+#import "FilteredAppListCell.h"
 
 
 // SpringBoardServices
@@ -105,9 +105,9 @@ static BOOL isFirmware3x = NO;
 static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identifier) = NULL;
 
 
-@implementation AippAppListCell
+@implementation FilteredAppListCell
 
-@synthesize displayId, blackListType;
+@synthesize displayId, filteredListType, isIconLoaded, enableForceType;
 
 + (void)initialize
 {
@@ -129,28 +129,63 @@ static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identif
 		self.textLabel.text = displayName;
 		[displayName release];
 		
-		UIImage *icon = nil;
-		if (isFirmware3x) {
-			// Firmware < 4.0
-			NSString *iconPath = SBSCopyIconImagePathForDisplayIdentifier(identifier);
-			if (iconPath != nil) {
-				icon = [UIImage imageWithContentsOfFile:iconPath];
-				[iconPath release];
-			}
-		} else {
-			// Firmware >= 4.0
-			if (SBSCopyIconImagePNGDataForDisplayIdentifier != NULL) {
-				NSData *data = (*SBSCopyIconImagePNGDataForDisplayIdentifier)(identifier);
-				if (data != nil) {
-					icon = [UIImage imageWithData:data];
-					[data release];
-				}
+		UIImage *icon = [[UIImage alloc] initWithContentsOfFile:@"/System/Library/PrivateFrameworks/MobileIcons.framework/DefaultAppIcon~iphone.png"];
+		self.imageView.image = icon;
+		[icon release];
+		
+		filteredListType = FilteredListNone;
+	}
+}
+
+- (void)loadIcon {
+	if (!isIconLoaded && displayId != nil) {
+		NSThread *loadThread = [[NSThread alloc] initWithTarget:self selector:@selector(setIcon:) object:displayId];
+		[loadThread start];
+		[loadThread release];
+	}
+}
+
+- (void)setIcon:(NSString *)identifier {
+	UIImage *icon = nil;
+	
+	if (isFirmware3x) {
+		// Firmware < 4.0
+		NSString *iconPath = SBSCopyIconImagePathForDisplayIdentifier(identifier);
+		if (iconPath != nil) {
+			icon = [UIImage imageWithContentsOfFile:iconPath];
+			[iconPath release];
+		}
+	} else {
+		// Firmware >= 4.0
+		if (SBSCopyIconImagePNGDataForDisplayIdentifier != NULL) {
+			NSData *data = (*SBSCopyIconImagePNGDataForDisplayIdentifier)(identifier);
+			if (data != nil) {
+				icon = [UIImage imageWithData:data];
+				[data release];
 			}
 		}
-		self.imageView.image = icon;
-		
-		blackListType = SNBlackListNone;
 	}
+	
+	self.imageView.image = icon;
+	
+	isIconLoaded = YES;
+}
+
+- (FilteredListType)toggle {
+	switch (filteredListType) {
+		case FilteredListNone:
+			filteredListType = FilteredListNormal;
+			break;
+		case FilteredListForce:
+			filteredListType = (enableForceType ? FilteredListNone : FilteredListForce);
+			break;
+		case FilteredListNormal:
+		default:
+			filteredListType = (enableForceType ? FilteredListForce : FilteredListNone);
+			break;
+	}
+	
+	return filteredListType;
 }
 
 - (void)layoutSubviews
@@ -161,16 +196,16 @@ static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identif
 	self.imageView.frame = CGRectMake(4.0f, 4.0f, size.height - 8.0f, size.height - 8.0f);
 	self.imageView.contentMode = UIViewContentModeScaleAspectFit;
 	
-	switch (blackListType) {
-		case SNBlackListNormal:
+	switch (filteredListType) {
+		case FilteredListNormal:
 			self.accessoryType = UITableViewCellAccessoryCheckmark;
 			self.textLabel.textColor = [UIColor colorWithRed:81/255.0 green:102/255.0 blue:145/255.0 alpha:1];
 			break;
-		case SNBlackListForce:
+		case FilteredListForce:
 			self.accessoryType = UITableViewCellAccessoryNone;
 			self.textLabel.textColor = [UIColor colorWithRed:181/255.0 green:181/255.0 blue:181/255.0 alpha:1];
 			break;
-		case SNBlackListNone:
+		case FilteredListNone:
 		default:
 			self.accessoryType = UITableViewCellAccessoryNone;
 			self.textLabel.textColor = [UIColor blackColor];

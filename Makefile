@@ -7,7 +7,7 @@ AlwaysiPodPlay_FRAMEWORKS = UIKit AVFoundation AudioToolbox
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 BUNDLE_NAME = AlwaysiPodPlaySettings
-AlwaysiPodPlaySettings_FILES = AlwaysiPodPlaySettings.m AippAppListCell.m ../MBProgressHUD/MBProgressHUD.m
+AlwaysiPodPlaySettings_FILES = AlwaysiPodPlaySettings.m FilteredAppListCell.m ../MBProgressHUD/MBProgressHUD.m
 AlwaysiPodPlaySettings_INSTALL_PATH = /Library/PreferenceBundles
 AlwaysiPodPlaySettings_FRAMEWORKS = UIKit QuartzCore CoreGraphics
 AlwaysiPodPlaySettings_PRIVATE_FRAMEWORKS = Preferences SpringBoardServices

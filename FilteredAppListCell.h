@@ -39,7 +39,7 @@
  */
 
 /**
- * AippAppListCell.h
+ * FilteredAppListCell.h
  * 
  * edited by deVbug
  */
@@ -49,18 +49,23 @@
 #include <dlfcn.h>
 
 
-typedef NSInteger SNBlackListType;
+typedef NSInteger FilteredListType;
 enum {
-	SNBlackListNone = 0,
-	SNBlackListNormal = 1,
-	SNBlackListForce = 2
+	FilteredListNone = 0,
+	FilteredListNormal = 1,
+	FilteredListForce = 2
 };
 
-@interface AippAppListCell : UITableViewCell {
-    NSString *displayId;
-	SNBlackListType blackListType;
-}
+@interface FilteredAppListCell : UITableViewCell
+
 @property(nonatomic, copy) NSString *displayId;
-@property(nonatomic) SNBlackListType blackListType;
+@property(nonatomic) FilteredListType filteredListType;
+@property(nonatomic) BOOL isIconLoaded;
+@property(nonatomic) BOOL enableForceType;
+
+- (void)loadIcon;
+- (void)setIcon:(NSString *)identifier;
+- (FilteredListType)toggle;
+
 @end
 

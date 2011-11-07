@@ -1,7 +1,7 @@
 Package: me.devbug.alwaysipodplay
 Name: Always iPod Play
 Depends: mobilesubstrate, firmware (>= 4.0)
-Version: 0.0.1
+Version: 0.0.2
 Architecture: iphoneos-arm
 Description: Do not stop iPod play when you start game.
 Maintainer: deVbug <devbug@devbug.me>
