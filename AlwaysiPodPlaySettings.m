@@ -25,18 +25,9 @@
 #import <UIKit/UITextView2.h>
 #import <Preferences/Preferences.h>
 
-#import "../MBProgressHUD/MBProgressHUD.h"
-#import "../FilteredAppListCell/FilteredAppListCell.h"
+#import "../FilteredAppListTableView/FilteredAppListTableView.h"
 
 #include <objc/runtime.h>
-
-
-#define HUD_TAG		998
-
-
-extern NSInteger compareDisplayNames(NSString *a, NSString *b, void *context);
-extern NSArray *applicationDisplayIdentifiers();
-extern NSString * SBSCopyLocalizedApplicationNameForDisplayIdentifier(NSString *identifier);
 
 
 
@@ -68,12 +59,9 @@ static PSListController *_SettingsController;
 
 
 
-@interface AlwaysiPodPlayWhiteListController: PSViewController <UITableViewDelegate, UITableViewDataSource> {
-	UITableView *_tableView;
-	NSMutableArray *_list;
+@interface AlwaysiPodPlayWhiteListController: PSViewController <FilteredAppListDelegate> {
+	FilteredAppListTableView *_tableView;
 	NSMutableString *_title;
-	UIView *window;
-	UIView *__view;
 }
 
 - (id)initForContentSize:(CGSize)size;
@@ -82,17 +70,8 @@ static PSListController *_SettingsController;
 - (id)navigationTitle;
 - (void)dealloc;
 
-- (void)loadWhiteListView;
-- (void)loadInstalledAppData;
-- (id)makeCell:(NSString *)identifier;
-
-- (int)numberOfSectionsInTableView:(UITableView *)tableView;
-- (id)tableView:(UITableView *)tableView titleForHeaderInSection:(int)section;
-- (int)tableView:(UITableView *)tableView numberOfRowsInSection:(int)section;
-- (id)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath;
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath;
-- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView;
-- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index;
+- (FilteredListType)filteredListTypeWithIdentifier:(NSString *)identifier;
+- (void)didSelectRowAtCell:(FilteredAppListCell *)cell;
 
 @end
 
@@ -102,21 +81,9 @@ static PSListController *_SettingsController;
 
 
 - (id)initForContentSize:(CGSize)size {
+	if ([[UIApplication sharedApplication] keyWindow] == nil) return nil;
+	
 	if ((self = [super initForContentSize:size]) != nil) {
-		_list = nil;
-		
-		_tableView = [[UITableView alloc] initWithFrame:CGRectMake(0, 0, 320, 480-64) style:UITableViewStylePlain];
-		[_tableView setDelegate:self];
-		[_tableView setDataSource:self];
-		
-		__view = nil;
-		window = [[UIApplication sharedApplication] keyWindow];
-		if (window == nil) {
-			__view = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 320, 480-64)];
-			[__view addSubview:_tableView];
-			window = __view;
-		}
-		
 		if(!_title)
 			_title = [[NSMutableString alloc] init];
 		
@@ -125,88 +92,41 @@ static PSListController *_SettingsController;
 		if ([self respondsToSelector:@selector(navigationItem)])
 			[[self navigationItem] setTitle:_title];
 		
-		[self loadWhiteListView];
+		_tableView = [[FilteredAppListTableView alloc] initForContentSize:size 
+																 delegate:self 
+														  filteredAppType:FilteredAppAll 
+															  enableForce:NO];
+		_tableView.hudLabelText = [[_SettingsController bundle] localizedStringForKey:@"LOAD_DATA" value:@"Loading Data" table:@"AlwaysiPodPlaySettings"];
+		_tableView.hudDetailsLabelText = [[_SettingsController bundle] localizedStringForKey:@"PLZ_WAIT" value:@"Please wait..." table:@"AlwaysiPodPlaySettings"];
+		[_tableView loadFilteredList];
 	}
 	
 	return self;
 }
 
-- (void)loadWhiteListView
-{
-	MBProgressHUD *HUD = nil;
-	if ((HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG]) == nil) {
-		HUD = [[MBProgressHUD alloc] initWithView:window];
-		[window addSubview:HUD];
-	}
-	HUD.labelText = [[_SettingsController bundle] localizedStringForKey:@"LOAD_DATA" value:@"Loading Data" table:@"AlwaysiPodPlaySettings"];
-	HUD.detailsLabelText = [[_SettingsController bundle] localizedStringForKey:@"PLZ_WAIT" value:@"Please wait..." table:@"AlwaysiPodPlaySettings"];
-	HUD.labelFont = [UIFont fontWithName:@"Helvetica" size:24];
-	HUD.detailsLabelFont = [UIFont fontWithName:@"Helvetica" size:18];
-	HUD.tag = HUD_TAG;
-	[HUD show:YES];
-	[HUD release];
+
+- (id)view {
+	return [_tableView view];
+}
+
+- (id)_tableView {
+	return _tableView.tableView;
+}
+
+- (id)navigationTitle {
+	return _title;
+}
+
+- (void)dealloc {
+	[_tableView release];
+	[_title release];
 	
-	[self performSelector:@selector(loadInstalledAppData) withObject:nil afterDelay:0.1f];
+	[super dealloc];
 }
 
 
-- (void)loadInstalledAppData {
-	NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-	
-	[_tableView setDataSource:nil];
-	[_list release];
-	_list = [[NSMutableArray alloc] init];
-	
-	NSSet *set = [NSSet setWithArray:applicationDisplayIdentifiers()];
-	NSArray *sortedArray = [[set allObjects] sortedArrayUsingFunction:compareDisplayNames context:NULL];
-	
-	// http://pastebin.com/7YkT4dbk
-	// 한글 로마자 변환 프로그램 by 동성
-	NSString *choCharset = @"ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ";
-	
-	unichar header = ' ', temp;
-	for (NSString *displayId in sortedArray) {
-		NSString *name = SBSCopyLocalizedApplicationNameForDisplayIdentifier(displayId);
-		
-		if (name) {
-			temp = [[name uppercaseString] characterAtIndex:0];
-			[name release];
-			
-			if(0xAC00 <= temp && temp <= 0xD7AF) {
-				unsigned int choSung = (temp - 0xAC00) / (21*28);
-				temp = [[choCharset substringWithRange:NSMakeRange(choSung, 1)] characterAtIndex:0];
-			}
-			
-			if (header != temp) {
-				header = temp;
-				[_list addObject:[NSMutableDictionary dictionaryWithObjectsAndKeys:[NSString stringWithCharacters:&header length:1], @"section", nil]];
-			}
-		}
-		
-		if ([_list count] > 0) {
-			NSMutableArray *arr = [[_list objectAtIndex:[_list count]-1] objectForKey:@"data"];
-			if (arr == nil)
-				arr = [NSMutableArray array];
-			[arr addObject:[self makeCell:displayId]];
-			
-			[[_list objectAtIndex:[_list count]-1] setObject:arr forKey:@"data"];
-		}
-	}
-	
-	[_tableView setDataSource:self];
-	[_tableView reloadData];
-	
-	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG];
-	[HUD hide:YES];
-	
-	[pool release];
-}
-
-- (id)makeCell:(NSString *)identifier {
-	FilteredAppListCell *cell = [[[FilteredAppListCell alloc] initWithFrame:CGRectMake(0, 0, 100, 100) reuseIdentifier:@"WhiteListCell"] autorelease];
-	
-	cell.enableForceType = NO;
-	cell.displayId = identifier;
+- (FilteredListType)filteredListTypeWithIdentifier:(NSString *)identifier {
+	FilteredListType appType = FilteredListNone;
 	
 	BOOL isWhiteList = NO;
 	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist"]) {
@@ -221,81 +141,18 @@ static PSListController *_SettingsController;
 	}
 	
 	if (isWhiteList) {
-		cell.filteredListType = FilteredListNormal;
+		appType = FilteredListNormal;
 	} else {
-		cell.filteredListType = FilteredListNone;
+		appType = FilteredListNone;
 	}
 	
-	if ([cell.displayId hasPrefix:@"com.apple.mobileipod"])
-		cell.filteredListType = FilteredListForce;
+	if ([identifier hasPrefix:@"com.apple.mobileipod"])
+		appType = FilteredListForce;
 	
-	return cell;
+	return appType;
 }
 
-
-- (id)view {
-	if (__view)
-		return __view;
-	
-	return _tableView;
-}
-
-- (id)_tableView {
-	return _tableView;
-}
-
-- (id)navigationTitle {
-	return _title;
-}
-
-- (int)numberOfSectionsInTableView:(UITableView *)tableView {
-	if (!_list) return 1;
-	return ([_list count] == 0 ? 1: [_list count]);
-}
-
-- (id)tableView:(UITableView *)tableView titleForHeaderInSection:(int)section {
-	if (!_list || [_list count] == 0)
-		return nil;
-	
-	return [[_list objectAtIndex:section] objectForKey:@"section"];
-}
-
-- (int)tableView:(UITableView *)tableView numberOfRowsInSection:(int)section {
-	if (!_list || [_list count] == 0)
-		return 0;
-	
-	return [[[_list objectAtIndex:section] objectForKey:@"data"] count];
-}
-
-- (NSArray *)sectionIndexTitlesForTableView:(UITableView *)tableView {
-	NSMutableArray *arr = [NSMutableArray array];
-	for (int i = 0; i < [_list count]; i++) {
-		[arr addObject:[[_list objectAtIndex:i] objectForKey:@"section"]];
-	}
-	return arr;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView sectionForSectionIndexTitle:(NSString *)title atIndex:(NSInteger)index {
-	return index;
-}
-
-- (id)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-	FilteredAppListCell *cell = (FilteredAppListCell *)[[[_list objectAtIndex:indexPath.section] objectForKey:@"data"] objectAtIndex:indexPath.row];
-	
-	[cell loadIcon];
-	
-	return cell;
-}
-
-- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-	FilteredAppListCell *cell = (FilteredAppListCell *)[tableView cellForRowAtIndexPath:indexPath];
-	
-	[cell toggle];
-	
-	[tableView deselectRowAtIndexPath:(NSIndexPath *)indexPath animated:YES];
-	
-	if (cell.filteredListType == FilteredListForce) return;
-	
+- (void)didSelectRowAtCell:(FilteredAppListCell *)cell {
 	NSString *identifier = cell.displayId;
 	NSMutableDictionary *data;
 	if ([[NSFileManager defaultManager] fileExistsAtPath:@"/User/Library/Preferences/me.deVbug.AlwaysiPodPlay.plist"]) {
@@ -323,18 +180,6 @@ static PSListController *_SettingsController;
 	CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR("me.devbug.alwaysipodplay.prefnoti"), NULL, NULL, true);
 }
 
-- (void)dealloc {
-	MBProgressHUD *HUD = (MBProgressHUD *)[window viewWithTag:HUD_TAG];
-	[HUD removeFromSuperview];
-	
-	[_tableView release];
-	[_list release];
-	[_title release];
-	[__view release];
-	
-	[super dealloc];
-}
-
 
 @end
 
@@ -355,13 +200,15 @@ static PSListController *_SettingsController;
 @implementation AlwaysiPodPlayLicenseViewController
 
 -(id)initForContentSize:(CGSize)contentSize {
+	if ([[UIApplication sharedApplication] keyWindow] == nil) return nil;
+	
 	self = [super initForContentSize:contentSize];
 	
 	if (self) {
 		_title = [[NSMutableString alloc] init];
 		[_title setString:[[_SettingsController bundle] localizedStringForKey:@"License" value:@"License" table:@"AlwaysiPodPlaySettings"]];
 		
-		_textView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 320, 480-64)];
+		_textView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, contentSize.width, contentSize.height-64)];
 		[_textView setEditable:NO];
 		[_textView setFont:[UIFont systemFontOfSize:14.0]];
 		_textView.textColor = [UIColor grayColor];
