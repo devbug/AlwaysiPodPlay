@@ -49,6 +49,13 @@
 #include <dlfcn.h>
 
 
+typedef NSInteger FilteredAppType;
+enum {
+	FilteredAppUsers =	0x01,
+	FilteredAppSystem = 0x10,
+	FilteredAppAll =	0x11
+};
+
 typedef NSInteger FilteredListType;
 enum {
 	FilteredListNone = 0,
@@ -64,7 +71,7 @@ enum {
 @property(nonatomic) BOOL enableForceType;
 
 - (void)loadIcon;
-- (void)setIcon:(NSString *)identifier;
+- (void)setIcon;
 - (FilteredListType)toggle;
 
 @end

@@ -66,7 +66,7 @@ NSInteger compareDisplayNames(NSString *a, NSString *b, void *context)
 	return ret;
 }
 
-NSArray *applicationDisplayIdentifiers()
+NSArray *applicationDisplayIdentifiersForMode(FilteredAppType type)
 {
 	// Get list of non-hidden applications
 	NSArray *nonhidden = SBSCopyApplicationDisplayIdentifiers(NO, NO);
@@ -78,10 +78,25 @@ NSArray *applicationDisplayIdentifiers()
 	if ([value isKindOfClass:[NSArray class]])
 		hidden = (NSArray *)value;
 	
+	NSString *path = @"/var/mobile/Library/Caches/com.apple.mobile.installation.plist";
+	NSDictionary *cacheDict = [NSDictionary dictionaryWithContentsOfFile:path];
+	NSDictionary *systemApp = [cacheDict objectForKey:@"System"];
+	NSArray *systemAppArr = [systemApp allKeys];
+	
 	// Record list of valid identifiers
 	NSMutableArray *identifiers = [NSMutableArray array];
 	for (NSArray *array in [NSArray arrayWithObjects:nonhidden, hidden, nil]) {
 		for (NSString *identifier in array) {
+			FilteredAppType isType = FilteredAppUsers;
+			for (NSString *systemIdentifier in systemAppArr) {
+				if ([identifier hasPrefix:systemIdentifier]) {
+					isType = FilteredAppSystem;
+					break;
+				}
+			}
+			
+			if ((isType & type) == 0) continue;
+			
 			// Filter out non-apps and apps that are not executed directly
 			// FIXME: Should Categories folders be in this list? Categories
 			//        folders are apps, but when used with CategoriesSB they are
@@ -98,6 +113,11 @@ NSArray *applicationDisplayIdentifiers()
 	[nonhidden release];
 	
 	return identifiers;
+}
+
+NSArray *applicationDisplayIdentifiers()
+{
+	return applicationDisplayIdentifiersForMode(FilteredAppAll);
 }
 
 
@@ -130,6 +150,8 @@ static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identif
 		[displayName release];
 		
 		UIImage *icon = [[UIImage alloc] initWithContentsOfFile:@"/System/Library/PrivateFrameworks/MobileIcons.framework/DefaultAppIcon~iphone.png"];
+		if (icon == nil)
+			icon = [[UIImage alloc] initWithContentsOfFile:@"/System/Library/PrivateFrameworks/MobileIcons.framework/DefaultAppIcon.png"];
 		self.imageView.image = icon;
 		[icon release];
 		
@@ -139,18 +161,20 @@ static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identif
 
 - (void)loadIcon {
 	if (!isIconLoaded && displayId != nil) {
-		NSThread *loadThread = [[NSThread alloc] initWithTarget:self selector:@selector(setIcon:) object:displayId];
+		NSThread *loadThread = [[NSThread alloc] initWithTarget:self selector:@selector(setIcon) object:nil];
 		[loadThread start];
 		[loadThread release];
 	}
 }
 
-- (void)setIcon:(NSString *)identifier {
+- (void)setIcon {
 	UIImage *icon = nil;
+	
+	if (displayId == nil) return;
 	
 	if (isFirmware3x) {
 		// Firmware < 4.0
-		NSString *iconPath = SBSCopyIconImagePathForDisplayIdentifier(identifier);
+		NSString *iconPath = SBSCopyIconImagePathForDisplayIdentifier(displayId);
 		if (iconPath != nil) {
 			icon = [UIImage imageWithContentsOfFile:iconPath];
 			[iconPath release];
@@ -158,7 +182,7 @@ static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identif
 	} else {
 		// Firmware >= 4.0
 		if (SBSCopyIconImagePNGDataForDisplayIdentifier != NULL) {
-			NSData *data = (*SBSCopyIconImagePNGDataForDisplayIdentifier)(identifier);
+			NSData *data = (*SBSCopyIconImagePNGDataForDisplayIdentifier)(displayId);
 			if (data != nil) {
 				icon = [UIImage imageWithData:data];
 				[data release];
@@ -166,9 +190,11 @@ static NSData * (*SBSCopyIconImagePNGDataForDisplayIdentifier)(NSString *identif
 		}
 	}
 	
-	self.imageView.image = icon;
-	
-	isIconLoaded = YES;
+	if (icon) {
+		self.imageView.image = icon;
+		
+		isIconLoaded = YES;
+	}
 }
 
 - (FilteredListType)toggle {

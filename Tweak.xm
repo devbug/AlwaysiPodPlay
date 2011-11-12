@@ -124,18 +124,15 @@ OSStatus new_AudioSessionSetProperty(AudioSessionPropertyID inID, UInt32 ioDataS
 
 
 
-%hook UIApplication
-
-%group UIAppiOS5
-
-
 Class $CURAPP;
-static void (*origin_applicationDidBecomeActive)(id self, SEL sel, UIApplication *application);
-static void (*origin_applicationWillResignActive)(id self, SEL sel, UIApplication *application);
 
 
-static void new_applicationDidBecomeActive(id self, SEL sel, UIApplication *application) {
-	origin_applicationDidBecomeActive(self, sel, application);
+%hook CurrentApp
+
+%group UIAppiOS5_CurAPP_Become
+
+- (void)applicationDidBecomeActive:(id)application {
+	%orig;
 	
 	UInt32 otherAudioIsPlaying;
 	UInt32 propertySize = sizeof(otherAudioIsPlaying);
@@ -164,9 +161,13 @@ static void new_applicationDidBecomeActive(id self, SEL sel, UIApplication *appl
 	}
 }
 
+%end
 
-static void new_applicationWillResignActive(id self, SEL sel, UIApplication *application) {
-	origin_applicationWillResignActive(self, sel, application);
+
+%group UIAppiOS5_CurAPP_Resign
+
+- (void)applicationWillResignActive:(id)application {
+	%orig;
 	
 	UInt32 otherAudioIsPlaying;
 	UInt32 propertySize = sizeof(otherAudioIsPlaying);
@@ -193,6 +194,14 @@ static void new_applicationWillResignActive(id self, SEL sel, UIApplication *app
 	}
 }
 
+%end
+
+%end
+
+
+%hook UIApplication
+
+%group UIAppiOS5
 
 // iOS 5
 //- (int)_loadMainNibFileNamed:(id)arg1 bundle:(id)arg2;
@@ -222,10 +231,12 @@ static void new_applicationWillResignActive(id self, SEL sel, UIApplication *app
 	
 	[[AVAudioSession sharedInstance] setActive:NO error:nil];
 	
-	id app = [[UIApplication sharedApplication] delegate];
-	$CURAPP = objc_getClass(object_getClassName([app class]));
-	origin_applicationDidBecomeActive = MSHookMessage($CURAPP, @selector(applicationDidBecomeActive:), &new_applicationDidBecomeActive);
-	origin_applicationWillResignActive = MSHookMessage($CURAPP, @selector(applicationWillResignActive:), &new_applicationWillResignActive);
+	id app = [self delegate];
+	$CURAPP = app ? [app class] : [self class];
+	if ([app respondsToSelector:@selector(applicationDidBecomeActive:)])
+		%init(UIAppiOS5_CurAPP_Become, CurrentApp = $CURAPP);
+	if ([app respondsToSelector:@selector(applicationWillResignActive:)])
+		%init(UIAppiOS5_CurAPP_Resign, CurrentApp = $CURAPP);
 	
 	return rtn;
 }

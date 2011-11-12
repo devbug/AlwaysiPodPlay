@@ -26,7 +26,7 @@
 #import <Preferences/Preferences.h>
 
 #import "../MBProgressHUD/MBProgressHUD.h"
-#import "FilteredAppListCell.h"
+#import "../FilteredAppListCell/FilteredAppListCell.h"
 
 #include <objc/runtime.h>
 
