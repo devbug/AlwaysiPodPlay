@@ -8,9 +8,9 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 BUNDLE_NAME = AlwaysiPodPlaySettings
 AlwaysiPodPlaySettings_FILES = AlwaysiPodPlaySettings.m \
-							   ../FilteredAppListTableView/FilteredAppListCell.m \
-							   ../FilteredAppListTableView/FilteredAppListTableView.m \
-							   ../MBProgressHUD/MBProgressHUD.m
+							   FilteredAppListTableView/FilteredAppListCell.m \
+							   FilteredAppListTableView/FilteredAppListTableView.m \
+							   FilteredAppListTableView/MBProgressHUD/MBProgressHUD.m
 AlwaysiPodPlaySettings_INSTALL_PATH = /Library/PreferenceBundles
 AlwaysiPodPlaySettings_FRAMEWORKS = UIKit QuartzCore CoreGraphics
 AlwaysiPodPlaySettings_PRIVATE_FRAMEWORKS = Preferences SpringBoardServices

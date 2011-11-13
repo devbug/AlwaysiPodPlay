@@ -25,7 +25,7 @@
 #import <UIKit/UITextView2.h>
 #import <Preferences/Preferences.h>
 
-#import "../FilteredAppListTableView/FilteredAppListTableView.h"
+#import "FilteredAppListTableView/FilteredAppListTableView.h"
 
 #include <objc/runtime.h>
 
