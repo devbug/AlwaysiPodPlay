@@ -1,0 +1,3 @@
+[submodule "FilteredAppListTableView"]
+	path = FilteredAppListTableView
+	url = git@github.com:devbug/FilteredAppListTableView.git
