@@ -70,7 +70,7 @@ static PSListController *_SettingsController;
 - (id)navigationTitle;
 - (void)dealloc;
 
-- (FilteredListType)filteredListTypeWithIdentifier:(NSString *)identifier;
+- (FilteredListType)filteredListTypeForIdentifier:(NSString *)identifier;
 - (void)didSelectRowAtCell:(FilteredAppListCell *)cell;
 
 @end
@@ -125,7 +125,7 @@ static PSListController *_SettingsController;
 }
 
 
-- (FilteredListType)filteredListTypeWithIdentifier:(NSString *)identifier {
+- (FilteredListType)filteredListTypeForIdentifier:(NSString *)identifier {
 	FilteredListType appType = FilteredListNone;
 	
 	BOOL isWhiteList = NO;
