@@ -15,7 +15,7 @@ extern PSListController *_SettingsController;
 }
 
 - (void)loadView {
-    [super loadView];
+	[super loadView];
 	
 	self.view.frame = delegate.view.frame;
 	
