@@ -1,6 +1,6 @@
 /* 
  * 
- *	AlwaysiPodPlaySettings.m
+ *	AlwaysiPodPlayWhiteListController.m
  *	AlwaysiPodPlay's Settings bundle
  *	
  *	
