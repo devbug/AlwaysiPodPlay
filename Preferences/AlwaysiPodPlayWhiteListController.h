@@ -24,7 +24,7 @@
 
 #import "Preferences.h"
 
-#import "../../FilteredAppListTableView/FilteredAppListTableView.h"
+#import "../FilteredAppListTableView/FilteredAppListTableView.h"
 
 
 @interface AlwaysiPodPlayWhiteListController : AAPListController <FilteredAppListDelegate> {
