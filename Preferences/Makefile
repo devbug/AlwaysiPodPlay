@@ -1,16 +1,18 @@
+ARCHS = armv7 armv7s arm64
+SDKVERSION = 7.0
+TARGET_IPHONEOS_DEPLOYMENT_VERSION = 4.0
+
 include theos/makefiles/common.mk
 
 BUNDLE_NAME = AlwaysiPodPlaySettings
 AlwaysiPodPlaySettings_FILES = AlwaysiPodPlaySettings.m \
-							   AIPLicenseViewController2.m \
-							   AIPWhiteListController2.m \
-							   ../FilteredAppListTableView/FilteredAppListCell.m \
-							   ../FilteredAppListTableView/FilteredAppListTableView.m \
-							   ../FilteredAppListTableView/MBProgressHUD/MBProgressHUD.m
+							   AlwaysiPodPlayWhiteListController.m \
+							   ../../FilteredAppListTableView/FilteredAppListCell.m \
+							   ../../FilteredAppListTableView/FilteredAppListTableView.m \
+							   ../../MBProgressHUD/MBProgressHUD.m
 AlwaysiPodPlaySettings_INSTALL_PATH = /Library/PreferenceBundles
 AlwaysiPodPlaySettings_FRAMEWORKS = UIKit QuartzCore CoreGraphics
 AlwaysiPodPlaySettings_PRIVATE_FRAMEWORKS = Preferences SpringBoardServices
-AlwaysiPodPlaySettings_CFLAGS = -std=c99
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

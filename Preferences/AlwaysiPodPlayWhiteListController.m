@@ -1,11 +1,35 @@
+/* 
+ * 
+ *	AlwaysiPodPlaySettings.m
+ *	AlwaysiPodPlay's Settings bundle
+ *	
+ *	
+ *	Always iPod Play
+ *	Copyright (C) 2011-2014  deVbug (devbug@devbug.me)
+ *	
+ *	This program is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License.
+ *	 
+ *	This program is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *	
+ *	You should have received a copy of the GNU General Public License
+ *	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *	
+ */
+
+
 #import <UIKit/UIKit.h>
-#import "AIPWhiteListController2.h"
+#import "AlwaysiPodPlayWhiteListController.h"
 
 
 extern PSListController *_SettingsController;
 
 
-@implementation AIPWhiteListController2
+@implementation AlwaysiPodPlayWhiteListController
 
 
 - (id)init {
@@ -14,10 +38,14 @@ extern PSListController *_SettingsController;
 	return self;
 }
 
+- (id)specifiers {
+	[self setTitle:[[_SettingsController bundle] localizedStringForKey:@"WhiteList Apps" value:@"WhiteList Apps" table:@"AlwaysiPodPlaySettings"]];
+	
+	return nil;
+}
+
 - (void)loadView {
 	[super loadView];
-	
-	self.view.frame = delegate.view.frame;
 	
 	_tableView = [[FilteredAppListTableView alloc] initForContentSize:self.view.frame.size 
 															 delegate:self 
@@ -27,36 +55,14 @@ extern PSListController *_SettingsController;
 	_tableView.hudDetailsLabelText = [[_SettingsController bundle] localizedStringForKey:@"PLZ_WAIT" value:@"Please wait..." table:@"AlwaysiPodPlaySettings"];
 	[_tableView loadFilteredList];
 	
-	[self.view addSubview:_tableView.view];
-}
-
-- (void)viewDidLoad {
-	[super viewDidLoad];
-}
-
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
-}
-
-- (void)viewDidAppear:(BOOL)animated {
-	[super viewDidAppear:animated];
-}
-
-- (void)viewWillDisappear:(BOOL)animated {
-	[super viewWillDisappear:animated];
-}
-
-- (void)viewDidDisappear:(BOOL)animated {
-	[super viewDidDisappear:animated];
+	UIView *superview = self.view.superview;
+	[superview insertSubview:_tableView.view aboveSubview:self.view];
+	self.view = _tableView.view;
 }
 
 
 - (id)tableView {
 	return _tableView.view;
-}
-
-- (void)setDelegate:(id)_delegate {
-	delegate = _delegate;
 }
 
 
@@ -116,38 +122,9 @@ extern PSListController *_SettingsController;
 }
 
 
-- (void)didRotate:(NSNotification *)notification { 
-	UIDeviceOrientation orientation = [[UIDevice currentDevice] orientation];
-	
-	[self didRotateFromInterfaceOrientation:(UIInterfaceOrientation)orientation];
-}
-
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-	if ((UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)) {
-		[[UIDevice currentDevice] beginGeneratingDeviceOrientationNotifications];
-		[[NSNotificationCenter defaultCenter] addObserver:self 
-												 selector:@selector(didRotate:)
-													 name:@"UIDeviceOrientationDidChangeNotification" 
-												   object:nil];
-	}
-	
-	return UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad;
-}
-
-- (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation {
-	_tableView.view.frame = CGRectMake(0, 0, delegate.view.frame.size.width, delegate.view.frame.size.height);
-	
-	self.view.frame = delegate.view.frame;
-}
-
-
 - (void)dealloc {
+	[_tableView.view removeFromSuperview];
 	[_tableView release];
-	
-	[[UIDevice currentDevice] endGeneratingDeviceOrientationNotifications];
-	[[NSNotificationCenter defaultCenter] removeObserver:self 
-													name:@"UIDeviceOrientationDidChangeNotification" 
-												  object:nil];
 	
 	[super dealloc];
 }

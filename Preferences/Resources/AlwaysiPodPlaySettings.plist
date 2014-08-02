@@ -155,18 +155,6 @@
 			<string>PSGroupCell</string>
 		</dict>
 		<dict>
-			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>detail</key>
-			<string>AlwaysiPodPlayLicenseViewController</string>
-			<key>label</key>
-			<string>License</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-		</dict>
-		<dict>
 			<key>action</key>
 			<string>donate:</string>
 			<key>cell</key>
@@ -186,12 +174,14 @@
 			<string>icon-paypal.png</string>
 			<key>label</key>
 			<string>Donate</string>
+			<key>alignment</key>
+			<integer>2</integer>
 		</dict>		
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>Always iPod Play © 2011-2012 deVbug</string>
+			<string>Always iPod Play © 2011-2014 deVbug</string>
 		</dict>
 		<dict>
 			<key>cell</key>

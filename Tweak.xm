@@ -5,7 +5,7 @@
  *	
  *	
  *	Always iPod Play
- *	Copyright (C) 2011  deVbug (devbug@devbug.me)
+ *	Copyright (C) 2011-2014  deVbug (devbug@devbug.me)
  *	
  *	This program is free software: you can redistribute it and/or modify
  *	it under the terms of the GNU General Public License as published by
@@ -73,11 +73,11 @@ static OSStatus (*origin_AudioSessionSetProperty)(AudioSessionPropertyID inID, U
 
 OSStatus new_AudioSessionSetProperty(AudioSessionPropertyID inID, UInt32 ioDataSize, void *outData)
 {
-	if (inID == kAudioSessionProperty_AudioCategory)
+	if (inID == kAudioSessionProperty_AudioCategory) {
 		if (AlwaysiPodPlayNoManner) {
 			*((int*)outData) = kAudioSessionCategory_MediaPlayback;
 			UInt32 doSetProperty = 1;
-			origin_AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(doSetProperty), &doSetProperty);
+			return origin_AudioSessionSetProperty(kAudioSessionProperty_OverrideCategoryMixWithOthers, sizeof(doSetProperty), &doSetProperty);
 		} else {
 			UInt32 otherAudioIsPlaying;
 			UInt32 propertySize = sizeof(otherAudioIsPlaying);
@@ -89,6 +89,7 @@ OSStatus new_AudioSessionSetProperty(AudioSessionPropertyID inID, UInt32 ioDataS
 				*((int*)outData) = kAudioSessionCategory_SoloAmbientSound;
 			}
 		}
+	}
 	
 	return origin_AudioSessionSetProperty(inID, ioDataSize, outData);
 }
