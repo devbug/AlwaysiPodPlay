@@ -53,6 +53,7 @@ extern PSListController *_SettingsController;
 														  enableForce:NO];
 	_tableView.hudLabelText = [[_SettingsController bundle] localizedStringForKey:@"LOAD_DATA" value:@"Loading Data" table:@"AlwaysiPodPlaySettings"];
 	_tableView.hudDetailsLabelText = [[_SettingsController bundle] localizedStringForKey:@"PLZ_WAIT" value:@"Please wait..." table:@"AlwaysiPodPlaySettings"];
+	_tableView.iconMargin = 6.0f;
 	[_tableView loadFilteredList];
 	
 	UIView *superview = self.view.superview;

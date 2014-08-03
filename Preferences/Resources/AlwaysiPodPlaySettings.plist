@@ -8,7 +8,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>RESPRING_REQUIRED</string>
+			<string>EACHAPP_RESTART_REQUIRED</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -43,7 +43,7 @@
 			<key>cell</key>
 			<string>PSTitleValueCell</string>
 			<key>label</key>
-			<string>RESPRING_REQUIRED</string>
+			<string>EACHAPP_RESTART_REQUIRED</string>
 			<key>requiredCapabilities</key>
 			<array>
 				<dict>
@@ -58,7 +58,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>RESPRING_REQUIRED</string>
+			<string>EACHAPP_RESTART_REQUIRED</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -87,7 +87,7 @@
 			<key>cell</key>
 			<string>PSTitleValueCell</string>
 			<key>label</key>
-			<string>RESPRING_REQUIRED</string>
+			<string>EACHAPP_RESTART_REQUIRED</string>
 			<key>requiredCapabilities</key>
 			<array>
 				<dict>
@@ -101,8 +101,6 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>label</key>
-			<string>EnableType</string>
 			<key>footerText</key>
 			<string>NOMANNER_CAUTION</string>
 		</dict>
