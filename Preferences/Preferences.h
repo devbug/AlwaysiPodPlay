@@ -1,6 +1,6 @@
 #import <UIKit/UIKit.h>
 #import <Preferences/Preferences.h>
-#import "../../FilteredAppListTableView/PSFilteredAppListListController.h"
+#import "../FilteredAppListTableView/PSFilteredAppListListController.h"
 
 
 
