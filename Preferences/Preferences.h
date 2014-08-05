@@ -1,6 +1,11 @@
 #import <UIKit/UIKit.h>
 #import <Preferences/Preferences.h>
+#import "../../FilteredAppListTableView/PSFilteredAppListListController.h"
 
+
+
+#ifndef __D_PREFERENCES_HEADERS__
+#define __D_PREFERENCES_HEADERS__
 
 
 
@@ -228,6 +233,9 @@ extern NSString *PSValueKey; // value
 extern NSString *PSValuesDataSourceKey; // valuesDataSource
 
 
+#endif
+
+
 
 @interface AAPListController : PSListController
 @property (nonatomic, copy) NSString *_title;
@@ -236,6 +244,6 @@ extern NSString *PSValuesDataSourceKey; // valuesDataSource
 @end
 
 
-@interface AlwaysiPodPlaySettingsListController : PSListController
+@interface AlwaysiPodPlaySettingsListController : AAPListController <PSFilteredAppListDelegate>
 @end
 
