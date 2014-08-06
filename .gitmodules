@@ -1,3 +1,4 @@
 [submodule "FilteredAppListTableView"]
 	path = FilteredAppListTableView
 	url = https://github.com/devbug/FilteredAppListTableView
+	ignore = dirty
